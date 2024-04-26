@@ -4,6 +4,7 @@ import yaml
 
 from handle import handle_seq
 from handle_meta import handle_meta
+from conditionals_preprocessing import preprocess_kaitai_struct, dependency_order
 
 import os
 def write_leaf_values_to_file(data_tree, output_directory):
@@ -24,7 +25,7 @@ def write_leaf_values_to_file(data_tree, output_directory):
 output_directory = 'testcases'
 os.makedirs(output_directory, exist_ok=True)
 # Specify the path to your YAML file
-file_path = '/Users/darshanadask/mini_project/Working_area/week 12/fuzzer0304/example.ksy'
+file_path = '/Users/darshanadask/mini_project/Working_area/week 12/test3/example.ksy'
 
 # Read the YAML data from the file
 with open(file_path, 'r') as file:
@@ -32,9 +33,15 @@ with open(file_path, 'r') as file:
 
 # Load YAML data
 data_tree = yaml.safe_load(yaml_data)
-print(data_tree)
+#print(data_tree)
 #for i in range(0, 100):
 endianness, file_extension,id = handle_meta(data_tree['meta'])
+
+#dependency_graph= preprocess_kaitai_struct(data_tree['seq'])
+#print("Dependency tree is: ",dependency_graph )
+
+#ordered_list= dependency_order(dependency_graph)
+#print("Ordered list is:", ordered_list)
 #expansion = handle_seq(data_tree['seq'], endianness, data_tree)
 handle_seq(data_tree['seq'], endianness, data_tree)
 print(data_tree)
