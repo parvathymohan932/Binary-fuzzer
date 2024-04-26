@@ -52,7 +52,7 @@ def handle_seq(seq, endian, parent):
                 add_to_child_node(item, expansion)
                 total_expansion+=expansion
             else:
-                expansion += handle_type(parent['types'], endian, item_type)
+                expansion= handle_type(parent['types'], endian, item_type)
                 #print(expansion)
                 add_to_child_node(item, expansion)
                 total_expansion+=expansion
@@ -68,6 +68,15 @@ def handle_type(types, endian, user_defined_type):
     
     for key, value in types.items():
         if key == user_defined_type:
-            expansion+=handle_seq(types[key]['seq'], endian, value)
+            #print("HEREEEE:  ", types[key].get('value'))
+            print("HERE:",types[key].get('value'))
+            if types[key].get('value') is None:
+                #print("HEREEEE:  ", types[key].get('value'))
+                expansion=handle_seq(types[key]['seq'], endian, value)
+                add_to_child_node(types[key],expansion )
+            else:
+                expansion= types[key].get('value')
+               
+            
     
     return expansion
