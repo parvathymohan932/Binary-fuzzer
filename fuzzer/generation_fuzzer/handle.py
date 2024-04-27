@@ -1,7 +1,7 @@
 from random_generate import random_based_on_size, random_based_on_type
 from pack_list import pack_list
 from conditionals_preprocessing import preprocess_kaitai_struct, dependency_order, evaluate_condition
-
+import random
 
 def add_to_child_node(item, value):
     # Add the 'value' key to the current item dictionary and assign the generated value to it
@@ -47,8 +47,16 @@ def handle_seq(seq, endian, parent):
           total_expansion+=expansion
           add_to_child_node(item, expansion)
         elif item_type:
-            if item_type in ['u2', 'u4', 'u8', 's2', 's4', 's8', 'str', 'f2', 'f4', 'f8']:
+            if item_type in ['u1','u2', 'u4', 'u8', 's2', 's4', 's8', 'f2', 'f4', 'f8']:
                 expansion = random_based_on_type(size, item_type, '<' if endian == 'le' else '>', encoding)
+                add_to_child_node(item, expansion)
+                total_expansion+=expansion
+            elif item_type == 'str':
+                if  item.get('size-eos', False):
+                    size=random.randint(1,1024)
+                    expansion = random_based_on_type(size, item_type, '<' if endian == 'le' else '>', encoding)
+                else:
+                    expansion = random_based_on_type(size, item_type, '<' if endian == 'le' else '>', encoding)
                 add_to_child_node(item, expansion)
                 total_expansion+=expansion
             else:

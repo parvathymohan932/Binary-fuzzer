@@ -25,7 +25,7 @@ def write_leaf_values_to_file(data_tree, output_directory):
 output_directory = 'testcases'
 os.makedirs(output_directory, exist_ok=True)
 # Specify the path to your YAML file
-file_path = '/Users/darshanadask/mini_project/Working_area/week 12/test3/example.ksy'
+file_path = 'C:\\Users\\libna\\OneDrive\\Desktop\\mini_project\\animal_record.ksy'
 
 # Read the YAML data from the file
 with open(file_path, 'r') as file:

@@ -6,7 +6,10 @@ def random_based_on_size(size, endianness):
     return random_number.to_bytes(size, byteorder=byteorder)
 
 def random_based_on_type(size, type_field, endianness, encoding=None):
-    if type_field == 'u2':
+
+    if type_field=='u1':
+        return struct.pack(f'{endianness}B', random.randint(0, 255))
+    elif type_field == 'u2':
         return struct.pack(f'{endianness}H', random.randint(0, 65535))
     elif type_field == 'u4':
         return struct.pack(f'{endianness}I', random.randint(0, 4294967295))
