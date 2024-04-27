@@ -2,6 +2,7 @@ from random_generate import random_based_on_size, random_based_on_type
 from pack_list import pack_list
 from conditionals_preprocessing import preprocess_kaitai_struct, dependency_order, evaluate_condition
 import random
+from handle_enum import handle_enum
 
 def add_to_child_node(item, value):
     # Add the 'value' key to the current item dictionary and assign the generated value to it
@@ -31,6 +32,7 @@ def handle_seq(seq, endian, parent):
         size = item.get('size', 0)
         encoding = item.get('encoding')
         condition_string = item.get('if')
+        enum_name=item.get('enum')
         expansion = b''
         #if 'contents' in item:
         #    expansion += pack_list(item['contents'], '<' if endian == 'le' else '>')
@@ -64,6 +66,10 @@ def handle_seq(seq, endian, parent):
                 #print(expansion)
                 add_to_child_node(item, expansion)
                 total_expansion+=expansion
+        elif enum_name:
+            expansion+=handle_enum(parent['enums'],enum_name)
+            add_to_child_node(item,expansion)
+            total_expansion+=expansion
         else:
             expansion= random_based_on_size(size, endianness)
             add_to_child_node(item,expansion )
