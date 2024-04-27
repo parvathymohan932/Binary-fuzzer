@@ -3,94 +3,160 @@ from pack_list import pack_list
 from conditionals_preprocessing import preprocess_kaitai_struct, dependency_order, evaluate_condition
 import random
 from handle_enum import handle_enum
-
-def add_to_child_node(item, value):
-    # Add the 'value' key to the current item dictionary and assign the generated value to it
+def add_value_to_node(item, value):
     item['value'] = value
 
+def append_value_to_node(item, value):
+    if 'value' not in item:
+        item['value'] = b''
+    item['value'] += value
 
-def handle_seq(seq, endian, parent):
 
-    total_expansion= b''
-    valid_endian = 'big' if endian == 'le' else 'little'
-    endianness = '<' if endian == 'le' else '>'
 
-    dependency_graph= preprocess_kaitai_struct(seq)
-    #print("Dependency tree is: ",dependency_graph )
 
-    ordered_list= dependency_order(dependency_graph)
-    #print("Ordered list is:", ordered_list)
-    #print(ordered_list)
+def handle_field(field, endian, parent, grandparent):
+    content = field.get('contents')
+    field_type = field.get('type')
+    size = field.get('size', 0)
+    encoding = field.get('encoding')
+    
+    if content is not None:
+        expansion = pack_list(content, '<' if endian == 'le' else '>')
+    elif field_type:
+        if field_type in ['u1','u2', 'u4', 'u8', 's2', 's4', 's8', 'f2', 'f4', 'f8']:
+            expansion = random_based_on_type(size, field_type, '<' if endian == 'le' else '>', encoding)
+        elif field_type == 'str':
+                 if  (field.get('size-eos', False)==True):
+                     size=random.randint(1,1024)
+                     expansion = random_based_on_type(size, field_type, '<' if endian == 'le' else '>', encoding)
+                 else:
+                     expansion = random_based_on_type(size, field_type, '<' if endian == 'le' else '>', encoding)
+        else:
+            expansion = handle_type(parent, endian, field_type, grandparent)
+    else:
+        expansion = random_based_on_size(size, endian)
+    
+    return expansion
+
+
+
+
+
+def handle_repeat_field(field, endian, parent, grandparent):
+    total_expansion = b''
+    expansion = handle_field(field, endian, parent, grandparent)
+    total_expansion += expansion
+    append_value_to_node(field, expansion)
+    random_repeat_count = random.randrange(1, 100)
+    for _ in range(1, random_repeat_count):
+        expansion = handle_field(field, endian, parent, grandparent)
+        total_expansion += expansion
+        append_value_to_node(field, expansion)
+    
+    return total_expansion
+
+
+def handle_repeat_expr_field(field, endian, seq, parent, grandparent):
+    total_expansion=b''
+    repeat_expr = field.get('repeat-expr')
+    expansion = handle_field(field, endian, parent, grandparent)  #so that it occurs atleast 1 time
+    total_expansion += expansion
+    append_value_to_node(field, expansion)
+    if repeat_expr is not None:
+        result= evaluate_condition(repeat_expr,field, seq, endian)
+    for _ in range(1,result):
+        expansion = handle_field(field, endian, parent, grandparent)
+        total_expansion += expansion
+        append_value_to_node(field, expansion)
+    
+    return total_expansion
+'''
+def handle_repeat_until_field(field, endian, seq, parent):
+    total_expansion=b''
+    repeat_expr = field.get('repeat-until')
+    expansion = handle_field(field, endian, parent)
+    total_expansion += expansion
+    append_value_to_node(field, expansion)
+    if repeat_expr is not None:
+        result= evaluate_condition(repeat_expr,field, seq, endian)
+        print("Result new: ", result)
+    for _ in range(1, result):
+        expansion = handle_field(field, endian, parent)
+        total_expansion += expansion
+        append_value_to_node(field, expansion)
+    
+    return total_expansion
+
+'''
+
+
+def handle_seq(seq, endian, parent, grandparent=None):
+    total_expansion = b''
+    dependency_graph = preprocess_kaitai_struct(seq)
+    ordered_list = dependency_order(dependency_graph)
+    
+    
     for field_id in ordered_list:
-    # Find the item corresponding to the current field ID
-        item = next((item for item in seq if item['id'] == field_id), None)
-        if item is None:
+        field = next((item for item in seq if item['id'] == field_id), None)
+        
+        if field is None:
             raise ValueError(f"Field ID '{field_id}' not found in the sequence.")
-        print(item.get('id'))
-        content = item.get('contents')
-        item_type = item.get('type')
-        size = item.get('size', 0)
-        encoding = item.get('encoding')
-        condition_string = item.get('if')
-        enum_name=item.get('enum')
-        expansion = b''
-        #if 'contents' in item:
-        #    expansion += pack_list(item['contents'], '<' if endian == 'le' else '>')
+        condition_string= field.get('if')
         if condition_string is not None:
             print("Seq is: ", seq)
-            result = evaluate_condition(condition_string, item,seq,endian)
+            result = evaluate_condition(condition_string, field,seq,endian)
             print("Result is: ",result)
             if(result==False):
                 continue
-        if content is not None:
-          # If content exists, add it to the current item dictionary as 'value'
-
-          expansion =  pack_list(content, endianness)
-          total_expansion+=expansion
-          add_to_child_node(item, expansion)
-        elif item_type:
-            if item_type in ['u1','u2', 'u4', 'u8', 's2', 's4', 's8', 'f2', 'f4', 'f8']:
-                expansion = random_based_on_type(size, item_type, '<' if endian == 'le' else '>', encoding)
-                add_to_child_node(item, expansion)
-                total_expansion+=expansion
-            elif item_type == 'str':
-                if  item.get('size-eos', False):
-                    size=random.randint(1,1024)
-                    expansion = random_based_on_type(size, item_type, '<' if endian == 'le' else '>', encoding)
-                else:
-                    expansion = random_based_on_type(size, item_type, '<' if endian == 'le' else '>', encoding)
-                add_to_child_node(item, expansion)
-                total_expansion+=expansion
-            else:
-                expansion= handle_type(parent['types'], endian, item_type)
-                #print(expansion)
-                add_to_child_node(item, expansion)
-                total_expansion+=expansion
-        elif enum_name:
-            expansion+=handle_enum(parent['enums'],enum_name)
-            add_to_child_node(item,expansion)
-            total_expansion+=expansion
+        
+        if field.get('repeat') is None:
+            
+            expansion = handle_field(field, endian, parent, grandparent)
         else:
-            expansion= random_based_on_size(size, endianness)
-            add_to_child_node(item,expansion )
-            total_expansion+=expansion
-    #print(expansion)
+            if field.get('repeat') == 'eos':
+                expansion = handle_repeat_field(field, endian, parent, grandparent)
+            #elif field.get('repeat') == 'expr':
+               # expansion= handle_repeat_expr_field(field, endian, seq, parent)
+            #elif field.get('repeat') == 'until':
+             #   expansion= handle_repeat_until_field(field, endian, seq, parent)
+        
+        #total_expansion += expansion
+        
+        add_value_to_node(field, expansion)
+    total_expansion= calculate_total_expansion_in_current_seq(parent)
     return total_expansion
 
-def handle_type(types, endian, user_defined_type):
-    expansion = b''
+
+def handle_type(parent, endian, user_defined_type, grandparent=None):
+    if parent is None and grandparent is None:
+        raise ValueError("Both parent and grandparent cannot be None.")
     
-    for key, value in types.items():
-        if key == user_defined_type:
-            #print("HEREEEE:  ", types[key].get('value'))
-            print("HERE:",types[key].get('value'))
-            if types[key].get('value') is None:
-                #print("HEREEEE:  ", types[key].get('value'))
-                expansion=handle_seq(types[key]['seq'], endian, value)
-                add_to_child_node(types[key],expansion )
-            else:
-                expansion= types[key].get('value')
-               
-            
+    expansion = b''
+    types_to_search = []
+    
+    if parent is not None and 'types' in parent:
+        types_to_search.append(parent['types'])
+    if grandparent is not None and 'types' in grandparent:
+        types_to_search.append(grandparent['types'])
+    
+    for types_dict in types_to_search:
+        if user_defined_type in types_dict:
+            type_entry = types_dict[user_defined_type]
+            print("HERE:", type_entry.get('value'))
+            expansion = handle_seq(type_entry['seq'], endian, type_entry, parent)
+            add_value_to_node(type_entry, expansion)
+            break
     
     return expansion
+
+
+
+def calculate_total_expansion_in_current_seq(parent):
+    total_expansion_in_current_seq=b''
+    # Write the contents of 'value' field for each item in 'seq' to the file
+    for item in parent['seq']:
+        # repeat= item.get('repeat')
+        field_value = item.get('value')
+        if field_value is not None:
+            total_expansion_in_current_seq+=field_value
+    return total_expansion_in_current_seq

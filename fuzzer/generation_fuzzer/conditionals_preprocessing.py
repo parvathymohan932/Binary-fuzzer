@@ -73,22 +73,29 @@ def binary_to_int(value, endianness):
         return 0
 
 def evaluate_condition(condition_string, item, seq,endian):
+    if isinstance(condition_string, int):
+        return condition_string
+    
     tokens = re.findall(r'\b\w+\b|[!=<>+*/%-]+', condition_string)
     print("Tokens:", tokens)
     print(condition_string)
     for i, token in enumerate(tokens):
-        for item_in_seq in seq:
-            if item_in_seq.get('id') == token:
-                tokens[i] = str(binary_to_int(item_in_seq.get('value'),endian))
-                break  # Stop searching once the token is replaced
-    
-    # Reconstruct the modified condition string
+        # Check if the token is an integer
+        if token.isdigit():
+            tokens[i] = token  # If it's an integer, keep it as it is
+        else:
+            # Otherwise, look for the corresponding item in the sequence
+            for item_in_seq in seq:
+                if item_in_seq.get('id') == token:
+                    tokens[i] = str(binary_to_int(item_in_seq.get('value'), endian))
+                    break  
     modified_condition_string = ''.join(tokens)
-    print(modified_condition_string)
-    # Evaluate the modified condition string
+    print("String is", modified_condition_string)
+
     try:
         result = eval(modified_condition_string)
-        return bool(result)
+        print("Result is :", result)
+        return result
     except (SyntaxError, ValueError) as e:
         print(f"Error occurred while evaluating condition: {e}")
         return False
