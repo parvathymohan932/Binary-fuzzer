@@ -3,6 +3,8 @@ from pack_list import pack_list
 from conditionals_preprocessing import preprocess_kaitai_struct, dependency_order, evaluate_condition
 import random
 from handle_enum import handle_enum
+from evaluate_size import evaluate_size
+
 def add_value_to_node(item, value):
     item['value'] = value
 
@@ -15,9 +17,10 @@ def append_value_to_node(item, value):
 
 
 def handle_field(field, endian, parent, grandparent):
+    endianness= '<' if endian == 'le' else '>'
     content = field.get('contents')
     field_type = field.get('type')
-    size = field.get('size', 0)
+    size = evaluate_size(field.get('size', 0), endianness, parent )
     encoding = field.get('encoding')
     enum_name=field.get('enum')
     if content is not None:
@@ -145,8 +148,14 @@ def handle_type(parent, endian, user_defined_type, grandparent=None):
         if user_defined_type in types_dict:
             type_entry = types_dict[user_defined_type]
             print("HERE:", type_entry.get('value'))
-            expansion = handle_seq(type_entry['seq'], endian, type_entry, parent)
-            add_value_to_node(type_entry, expansion)
+            #expansion = handle_seq(type_entry['seq'], endian, type_entry, parent)
+            #add_value_to_node(type_entry, expansion)
+            if type_entry.get('value') is None:
+                 #print("HEREEEE:  ", types[key].get('value'))
+                 expansion=handle_seq(type_entry['seq'], endian, type_entry, parent)
+                 add_value_to_node(type_entry,expansion )
+            else:
+                expansion= type_entry.get('value')
             break
     
     return expansion
