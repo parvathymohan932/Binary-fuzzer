@@ -19,11 +19,13 @@ def handle_field(field, endian, parent, grandparent):
     field_type = field.get('type')
     size = field.get('size', 0)
     encoding = field.get('encoding')
-    
+    enum_name=field.get('enum')
     if content is not None:
         expansion = pack_list(content, '<' if endian == 'le' else '>')
     elif field_type:
-        if field_type in ['u1','u2', 'u4', 'u8', 's2', 's4', 's8', 'f2', 'f4', 'f8']:
+        if enum_name:
+            expansion=handle_enum(parent['enums'], enum_name, field_type, '<' if endian == 'le' else '>')
+        elif field_type in ['u1','u2', 'u4', 'u8', 's2', 's4', 's8', 'f2', 'f4', 'f8']:
             expansion = random_based_on_type(size, field_type, '<' if endian == 'le' else '>', encoding)
         elif field_type == 'str':
                  if  (field.get('size-eos', False)==True):
