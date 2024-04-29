@@ -28,7 +28,7 @@ def handle_field(field, endian, parent, grandparent):
     elif field_type:
         if enum_name:
             expansion=handle_enum(parent['enums'], enum_name, field_type, '<' if endian == 'le' else '>')
-        elif field_type in ['u1','u2', 'u4', 'u8', 's2', 's4', 's8', 'f2', 'f4', 'f8']:
+        elif field_type in ['u1','u2', 'u4', 'u8','b1','b2','b4','b5', 's2', 's4', 's8', 'f2', 'f4', 'f8']:
             expansion = random_based_on_type(size, field_type, '<' if endian == 'le' else '>', encoding)
         elif field_type == 'str':
                  if  (field.get('size-eos', False)==True):

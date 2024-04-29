@@ -15,6 +15,17 @@ def random_based_on_type(size, type_field, endianness, encoding=None):
         return struct.pack(f'{endianness}I', random.randint(0, 4294967295))
     elif type_field == 'u8':
         return struct.pack(f'{endianness}Q', random.randint(0, 18446744073709551615))
+    elif type_field=='b1':
+        return struct.pack(f'{endianness}B', random.randint(0, 1))
+    elif type_field=='b4':
+        value = random.randint(0, 15)
+        return struct.pack(f'{endianness}B', value & 0b1111)
+    elif type_field == 'b2':
+        value = random.randint(0, 3)
+        return struct.pack(f'{endianness}B', value & 0b11)
+    elif type_field=='b5':
+        value = random.randint(0, 31)
+        return struct.pack(f'{endianness}B', value & 0b11111)
     elif type_field == 's2':
         return struct.pack(f'{endianness}h', random.randint(-32768, 32767))
     elif type_field == 's4':

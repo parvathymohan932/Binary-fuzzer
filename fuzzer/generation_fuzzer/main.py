@@ -20,7 +20,7 @@ def write_leaf_values_to_file(data_tree, output_directory):
     with open(filepath, 'wb') as file:
         # Write the contents of 'value' field for each item in 'seq' to the file
         for item in data_tree['seq']:
-           # repeat= item.get('repeat')
+           
            field_value = item.get('value')
            if field_value is not None:
                 file.write(field_value)
@@ -37,7 +37,8 @@ def write_leaf_values_to_file(data_tree, output_directory):
 output_directory = 'testcases'
 os.makedirs(output_directory, exist_ok=True)
 # Specify the path to your YAML file
-file_path = '/Users/darshanadask/mini_project/Working_area/week 12/test3/example.ksy'
+file_path = "C:\\Users\\libna\\OneDrive\\Desktop\\mini_project\\Binary-fuzzer\\kaitai-struct-formats\\image\\xwd.ksy"
+
 
 # Read the YAML data from the file
 with open(file_path, 'r') as file:
