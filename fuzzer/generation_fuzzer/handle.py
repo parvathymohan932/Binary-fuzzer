@@ -2,6 +2,7 @@ from random_generate import random_based_on_size, random_based_on_type
 from pack_list import pack_list
 from conditionals_preprocessing import preprocess_kaitai_struct, dependency_order, evaluate_condition
 import random
+import string
 from handle_enum import handle_enum
 from evaluate_size import evaluate_size
 
@@ -36,6 +37,18 @@ def handle_field(field, endian, parent, root, grandparent):
                      expansion = random_based_on_type(size, field_type, '<' if endian == 'le' else '>', encoding)
                  else:
                      expansion = random_based_on_type(size, field_type, '<' if endian == 'le' else '>', encoding)
+        elif field_type == 'strz':
+            if 'size' in field:
+                size = field['size']  
+            else:
+                size = random.randint(1, 1023)  
+
+            if size < 1:
+                size = 1
+            random_string = generate_random_string(size, encoding)
+            expansion = random_string.encode(encoding) + b'\0'
+
+            
         else:
             expansion = handle_type(parent, endian, field_type,root, grandparent)
     else:
@@ -44,7 +57,12 @@ def handle_field(field, endian, parent, root, grandparent):
     return expansion
 
 
-
+def generate_random_string(size, encoding):
+    # Generate random string of given size
+    # For simplicity, let's assume ASCII characters for now
+    random_string = ''.join(random.choice(string.ascii_letters) for _ in range(size))
+    print("The random string is", random_string)
+    return random_string
 
 
 def handle_repeat_field(field, endian, parent,root,  grandparent):
