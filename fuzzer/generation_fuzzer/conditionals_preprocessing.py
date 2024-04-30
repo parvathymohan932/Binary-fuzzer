@@ -3,17 +3,17 @@ import ast
 
 def preprocess_kaitai_struct(struct_definition):
     dependency_graph = {}
-    all_fields = set() #Using a set here, If we care about the order in the all fields, we should use list. Also when using set redundant fields will be overwritten, which means, instead of having error, the set will just consider the last field with same id. 
+    all_fields = [] #Using a set here, If we care about the order in the all fields, we should use list. Also when using set redundant fields will be overwritten, which means, instead of having error, the set will just consider the last field with same id. 
     for field in struct_definition:
         if 'if' in field:
             dependencies = extract_dependencies(field['if'], struct_definition)
             dependency_graph[field['id']] = dependencies
         else:
             # If the field does not have 'if' condition, add it to all_fields set
-            all_fields.add(field['id'])
-    #print("all fields: ",all_fields)
+            all_fields.append(field['id'])
     for field_id in all_fields:
-        dependency_graph[field_id] = set()
+        dependency_graph[field_id] = []
+
     print("Dependency graph: ", dependency_graph)
     return dependency_graph
 def extract_dependencies(condition, struct_definition):
