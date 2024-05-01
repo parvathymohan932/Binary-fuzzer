@@ -1,4 +1,4 @@
-from random_generate import random_based_on_size, random_based_on_type
+from random_generate import random_based_on_size, random_based_on_type ,convert_value_to_type
 from pack_list import pack_list
 from conditionals_preprocessing import preprocess_kaitai_struct, dependency_order, evaluate_condition
 import random
@@ -15,53 +15,64 @@ def append_value_to_node(item, value):
     item['value'] += value
 
 
-
-
 def handle_field(field, endian, parent, root, grandparent):
     endianness= '<' if endian == 'le' else '>'
     content = field.get('contents')
     field_type = field.get('type')
-    size = evaluate_size(field.get('size', 0), endianness, parent )
+    size = evaluate_size(field.get('size', 0), endianness, parent)
     encoding = field.get('encoding')
-    enum_name=field.get('enum')
+    enum_name = field.get('enum')
+    valid_value = field.get('valid')
+
+
     if content is not None:
         expansion = pack_list(content, '<' if endian == 'le' else '>')
+    elif valid_value is not None:
+        expansion = handle_valid(valid_value, field_type, endianness, encoding)
+        print("The valid value is", expansion)
     elif field_type:
         if enum_name:
-            expansion=handle_enum(root['enums'], enum_name, field_type, '<' if endian == 'le' else '>')
+            expansion = handle_enum(root['enums'], enum_name, field_type, '<' if endian == 'le' else '>')
         elif field_type in ['u1','u2', 'u4', 'u8', 's2', 's4', 's8', 'f2', 'f4', 'f8']:
             expansion = random_based_on_type(size, field_type, '<' if endian == 'le' else '>', encoding)
         elif field_type == 'str':
-                 if  (field.get('size-eos', False)==True):
-                     size=random.randint(1,1024)
-                     expansion = random_based_on_type(size, field_type, '<' if endian == 'le' else '>', encoding)
-                 else:
-                     expansion = random_based_on_type(size, field_type, '<' if endian == 'le' else '>', encoding)
+            if field.get('size-eos', False):
+                size = random.randint(1, 1024)
+            expansion = random_based_on_type(size, field_type, '<' if endian == 'le' else '>', encoding)
         elif field_type == 'strz':
             if 'size' in field:
-                size = field['size']  
+                size = field['size']
             else:
-                size = random.randint(1, 1023)  
-
+                size = random.randint(1, 1023)
             if size < 1:
                 size = 1
-            random_string = generate_random_string(size, encoding)
+            random_string = generate_random_string(size-1, encoding)
             expansion = random_string.encode(encoding) + b'\0'
-
-            
         else:
-            expansion = handle_type(parent, endian, field_type,root, grandparent)
+            expansion = handle_type(parent, endian, field_type, root, grandparent)
     else:
         expansion = random_based_on_size(size, endian)
     
     return expansion
 
+def handle_valid(valid_value, field_type, endianness, encoding=None):
+    if isinstance(valid_value, dict):
+        if 'min' in valid_value and 'max' in valid_value:
+            min_value = valid_value['min']
+            max_value = valid_value['max']
+            exp = random.randint(min_value, max_value)
+            return convert_value_to_type(exp, field_type, endianness, encoding)
+        elif 'eq' in valid_value:
+            eq_value = valid_value['eq']
+            return convert_value_to_type(eq_value, field_type, endianness, encoding)
+    elif valid_value is not None:
+        return convert_value_to_type(valid_value, field_type, endianness, encoding)
+
 
 def generate_random_string(size, encoding):
-    # Generate random string of given size
-    # For simplicity, let's assume ASCII characters for now
+    
     random_string = ''.join(random.choice(string.ascii_letters) for _ in range(size))
-    print("The random string is", random_string)
+    #print("The random string is", random_string)
     return random_string
 
 

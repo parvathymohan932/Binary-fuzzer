@@ -45,3 +45,42 @@ def random_based_on_type(size, type_field, endianness, encoding=None):
             return ''.join(chr(random.randint(33, 126)) for _ in range(size)).encode('ascii')
     else:
         return b''
+    
+
+def convert_value_to_type(value, type_field, endianness, encoding=None):
+    if type_field == 'u1':
+        return struct.pack(f'{endianness}B', value)
+    elif type_field == 'b1':
+        return struct.pack(f'{endianness}B', value & 0b1)
+    elif type_field == 'b4':
+        return struct.pack(f'{endianness}B', value & 0b1111)
+    elif type_field == 'b2':
+        return struct.pack(f'{endianness}B', value & 0b11)
+    elif type_field == 'b5':
+        return struct.pack(f'{endianness}B', value & 0b11111)
+    elif type_field == 'u2':
+        return struct.pack(f'{endianness}H', value)
+    elif type_field == 'u4':
+        return struct.pack(f'{endianness}I', value)
+    elif type_field == 'u8':
+        return struct.pack(f'{endianness}Q', value)
+    elif type_field == 's2':
+        return struct.pack(f'{endianness}h', value)
+    elif type_field == 's4':
+        return struct.pack(f'{endianness}i', value)
+    elif type_field == 's8':
+        return struct.pack(f'{endianness}q', value)
+    elif type_field == 'f4':
+        return struct.pack(f'{endianness}f', value)
+    elif type_field == 'f8':
+        return struct.pack(f'{endianness}d', value)
+    elif type_field == 'str':
+        if encoding == 'UTF-8':
+            return str(value).encode('utf-8')
+        elif encoding == 'ASCII':
+            return str(value).encode('ascii')
+        else:
+            return str(value).encode('ascii') 
+    else:
+        return b''
+
