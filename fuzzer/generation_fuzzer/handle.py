@@ -5,6 +5,7 @@ import random
 import string
 from handle_enum import handle_enum
 from evaluate_size import evaluate_size
+from evaluate_value import max_value_for_type
 
 def add_value_to_node(item, value):
     item['value'] = value
@@ -29,14 +30,14 @@ def handle_field(field, endian, parent, root, grandparent):
         expansion = pack_list(content, '<' if endian == 'le' else '>')
     elif valid_value is not None:
         expansion = handle_valid(valid_value, field_type, endianness, encoding)
-        print("The valid value is", expansion)
+        #print("The valid value is", expansion)
     elif field_type:
         if enum_name:
             expansion = handle_enum(root['enums'], enum_name, field_type, '<' if endian == 'le' else '>')
         elif field_type in ['u1','u2', 'u4', 'u8', 's2', 's4', 's8', 'f2', 'f4', 'f8']:
             expansion = random_based_on_type(size, field_type, '<' if endian == 'le' else '>', encoding)
         elif field_type == 'str':
-            if field.get('size-eos', False):
+            if (field.get('size-eos', False))==True:
                 size = random.randint(1, 1024)
             expansion = random_based_on_type(size, field_type, '<' if endian == 'le' else '>', encoding)
         elif field_type == 'strz':
@@ -62,9 +63,43 @@ def handle_valid(valid_value, field_type, endianness, encoding=None):
             max_value = valid_value['max']
             exp = random.randint(min_value, max_value)
             return convert_value_to_type(exp, field_type, endianness, encoding)
+        elif 'min' in valid_value:
+            min_value = valid_value['min']
+            max_type = max_value_for_type(field_type)
+            exp = random.randint(min_value, max_type)  
+            return convert_value_to_type(exp, field_type, endianness, encoding)
+        elif 'max' in valid_value:
+            max_value = valid_value['max']
+            exp = random.randint(0, max_value)
+            return convert_value_to_type(exp, field_type, endianness, encoding)
         elif 'eq' in valid_value:
             eq_value = valid_value['eq']
             return convert_value_to_type(eq_value, field_type, endianness, encoding)
+        elif 'any-of' in valid_value:
+            possible_values = valid_value['any-of']
+            if field_type == 'str':
+                possible_values = valid_value['any-of']
+                for i in range(len(possible_values)):
+                    if isinstance(possible_values[i], str) and possible_values[i].startswith('"') and possible_values[i].endswith('"'):
+                        possible_values[i] = possible_values[i][1:-1]
+                selected_value = random.choice(possible_values)
+                return convert_value_to_type(selected_value, field_type, endianness, encoding)
+            selected_value = random.choice(possible_values)
+            print(possible_values)
+            return convert_value_to_type(selected_value, field_type, endianness, encoding)
+        elif 'expr' in valid_value:
+            expr = valid_value['expr']
+            if isinstance(expr, str):
+                max_type=max_value_for_type(field_type)
+                max_attempts = 1000
+                for _ in range(max_attempts):
+                    try:
+                        random_value = random.randint(0,max_type)
+                        if eval(expr, {'_': random_value}):
+                            return convert_value_to_type(random_value, field_type, endianness, encoding)
+                    except Exception as e:
+                        pass  # Ignore exceptions and retry
+                raise ValueError("Unable to find a valid value satisfying the expression within the given range.")
     elif valid_value is not None:
         return convert_value_to_type(valid_value, field_type, endianness, encoding)
 
