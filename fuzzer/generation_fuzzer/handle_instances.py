@@ -1,6 +1,7 @@
 from random_generate import random_based_on_size, random_based_on_type
 from pack_list import pack_list
-from instance_preprocessing import preprocess_kaitai_struct, dependency_order, evaluate_condition
+from instance_preprocessing import preprocess_kaitai_struct, dependency_order
+from evaluate_condition import evaluate_condition
 import random
 import string
 from handle_enum import handle_enum
@@ -8,12 +9,12 @@ from evaluate_size import evaluate_size
 from handle import handle_seq
 from evaluate_value import pack_value
 def add_value_to_node(item, value):
-    item['value'] = value
+    item['expansion'] = value
 
 def append_value_to_node(item, value):
-    if 'value' not in item:
-        item['value'] = b''
-    item['value'] += value
+    if 'expansion' not in item:
+        item['expansion'] = b''
+    item['expansion'] += value
 
 
 
@@ -26,12 +27,13 @@ def handle_field(field, endian, parent, root, grandparent):
     size = evaluate_size(field.get('size', 0), endianness, parent )
     encoding = field.get('encoding')
     enum_name=field.get('enum')
-    #value_list=[]
-    #if value is not None:
+    value_list=[]
+    print("Value Instance: ", value)
+    if value is not None:
         #print("PARENT2:", parent['seq'])
-   #     expansion=pack_value(evaluate_condition(value, field, root,endianness),endian)
-   #     print("instance value expansion: ", expansion)
-    if content is not None:
+        expansion=pack_value(evaluate_condition(value, root,endianness),endian)
+        print("instance value expansion: ", expansion)
+    elif content is not None:
         expansion = pack_list(content, '<' if endian == 'le' else '>')
     elif field_type:
         if enum_name:
@@ -93,7 +95,7 @@ def handle_repeat_expr_field(field, endian, seq, parent,root, grandparent):
     total_expansion += expansion
     append_value_to_node(field, expansion)
     if repeat_expr is not None:
-        result= evaluate_condition(repeat_expr,field, seq, endian)
+        result= evaluate_condition(repeat_expr, seq, endian)
     for _ in range(1,result):
         expansion = handle_field(field, endian, parent, root,grandparent)
         total_expansion += expansion
@@ -134,7 +136,7 @@ def handle_instances(instances, endian, parent,root, grandparent=None):
         condition_string= field.get('if')
         if condition_string is not None:
             print("Instance is: ", instances)
-            result = evaluate_condition(condition_string, field,instances,endian)
+            result = evaluate_condition(condition_string,instances,endian)
             print("Result is: ",result)
             if(result==False):
                 continue
@@ -173,16 +175,16 @@ def handle_type(parent, endian, user_defined_type,root, grandparent=None):
         print("User-defined type is ", user_defined_type,"Type dict: ",  types_dict)
         if user_defined_type in types_dict:
             type_entry = types_dict[user_defined_type]
-            print("HERE:", type_entry.get('value'))
+            print("HERE:", type_entry.get('expansion'))
             print("PARENT: ",parent)
             #expansion = handle_seq(type_entry['seq'], endian, type_entry, parent)
             #add_value_to_node(type_entry, expansion)
-            if type_entry.get('value') is None:
-                 #print("HEREEEE:  ", types[key].get('value'))
+            if type_entry.get('expansion') is None:
+                 #print("HEREEEE:  ", types[key].get('expansion'))
                  expansion=handle_seq(type_entry['seq'], endian, type_entry,root, parent)
                  add_value_to_node(type_entry,expansion )
             else:
-                expansion= type_entry.get('value')
+                expansion= type_entry.get('expansion')
             break
     
     return expansion
@@ -194,7 +196,7 @@ def calculate_total_expansion_in_current_seq(parent):
     # Iterate over the key-value pairs in the 'instances' dictionary
     for item_key, item_value in parent['instances'].items():
         # Access the field value from the current item
-        field_value = item_value.get('value')
+        field_value = item_value.get('expansion')
         if field_value is not None:
             total_expansion_in_current_seq += field_value
     return total_expansion_in_current_seq

@@ -1,6 +1,6 @@
 from handle_dot_operator import handle_dot_operator
-from evaluate_value import convert_to_type
-
+#from evaluate_value import convert_to_type
+from evaluate_condition import evaluate_condition
 def evaluate_size(size_value, endianness, parent):
     """
     Evaluate the size value and convert it to the specified data type.
@@ -19,7 +19,7 @@ def evaluate_size(size_value, endianness, parent):
         return size_value
     elif isinstance(size_value, str):
         # If size_value is a string, evaluate it using dot operator and then convert to the specified data types
-        evaluated_value = handle_dot_operator(size_value, parent, endianness)
+        evaluated_value = evaluate_condition(size_value, parent, endianness)
         print("Evaluated value for size_value ", size_value, evaluated_value)
         return evaluated_value
     else:

@@ -1,10 +1,9 @@
 import re
 from handle_meta import handle_meta
 import struct
-from evaluate_value import convert_to_type
+from evaluate_value import binary_to_int
 # Example usage:
 # converted_value = convert_to_type(b'\x00\x01', 'u2', '<')
-
 
 def split_tokens_by_dot(condition_string):
     tokens = re.findall(r'[^.]+', condition_string)
@@ -54,7 +53,7 @@ def evaluate_value_dot_operator(nested_dict, parent, endianness):
             print("Parent['types']= ", parent)
             for item in parent['seq']:
                 if item.get('id') == key:
-                    evaluated_value = item.get('value')
+                    evaluated_value = item.get('expansion')
                     data_type = item.get('type')
                     encoding = item.get('encoding')
                     print(evaluated_value)
@@ -63,8 +62,8 @@ def evaluate_value_dot_operator(nested_dict, parent, endianness):
                     
                     if data_type is None:
                         # Handle when data type is None
-                        return convert_to_type(evaluated_value, None, endianness, encoding)
+                        return binary_to_int(evaluated_value, endianness)
                     else:
-                        return convert_to_type(evaluated_value, data_type, endianness, encoding)
+                        return binary_to_int(evaluated_value, endianness)
             else:
                 raise ValueError(f"Key '{key}' not found in the 'seq' list.")

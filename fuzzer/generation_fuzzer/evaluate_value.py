@@ -73,18 +73,85 @@ def integer_from_binary(binary_string, endianness):
     return int.from_bytes(binary_string, byteorder=byteorder)
 '''
 
-def max_value_for_type(type_str):
-    max_values = {
-        'u1': 0xFF,   
-        'u2': 0xFFFF, 
-        'u4': 0xFFFFFFFF, 
-        'u8': 0xFFFFFFFFFFFFFFFF, 
-        's1': 0x7F,   
-        's2': 0x7FFF, 
-        's4': 0x7FFFFFFF, 
-        's8': 0x7FFFFFFFFFFFFFFF, 
-    }
-    if type_str in max_values:
-        return max_values[type_str]
+def binary_to_int(value, endianness):
+    try:
+        if endianness == 'le':
+            # Little-endian byte order
+            value_int = int.from_bytes(value, byteorder='little')
+        else:
+            # Big-endian byte order
+            value_int = int.from_bytes(value, byteorder='big')
+        return value_int
+    except Exception as e:
+        print(f"Error occurred while converting binary to integer: {e}")
+        return 0
+
+
+# def binary_to_int(value, endianness):
+    
+#     try:
+#         # Ensure the input value is bytes
+#         if not isinstance(value, bytes):
+#             raise ValueError("Input value must be a byte sequence")
+
+#         if endianness == 'le':
+#             # Little-endian byte order
+#             value_int = int.from_bytes(value, byteorder='little')
+#         elif endianness == 'be':
+#             # Big-endian byte order
+#             value_int = int.from_bytes(value, byteorder='big')
+#         else:
+#             raise ValueError("Invalid endianness specified. Use 'le' for little-endian or 'be' for big-endian.")
+
+#         return value_int
+#     except Exception as e:
+#         raise ValueError(f"Error occurred while converting binary to integer: {e}")
+
+
+def pack_value(value, endian,item_type=None):
+  if item_type == "u1":
+          return struct.pack(f'{endian}B', value)
+  elif item_type == "u2":
+      return struct.pack(f'{endian}H', value)
+  elif item_type == "u4":
+      return struct.pack(f'{endian}I', value)
+  elif item_type == "u8":
+      return struct.pack(f'{endian}Q', value)
+#  elif item_type.startswith("enum"):
+#      return random.choice(list(enum_values))
+  elif item_type == 's2':
+      return struct.pack(f'{endian}h', value)
+  elif item_type == 's4':
+      return struct.pack(f'{endian}i', value)
+  elif item_type == 's8':
+      return struct.pack(f'{endian}q', value)
+  elif item_type == 'f4':
+      return struct.pack(f'{endian}f', value)
+  elif item_type == 'f8':
+      return struct.pack(f'{endian}d', value)
+#  elif item_type == 'str':
+#      if encoding == 'UTF-8':
+#          return ''.join(chr(random_key) for _ in range(size)).encode('utf-8')
+#      elif encoding == 'ASCII':
+#          return ''.join(chr(random_key) for _ in range(size)).encode('ascii')
+#      else:
+#          return ''.join(chr(random_key) for _ in range(size)).encode('ascii')
+  elif item_type is None:
+      return int_to_binary(value, endian)
+  else:
+      raise ValueError(f"Unsupported item type '{item_type}'.")
+
+def int_to_binary(num, endian='le'):
+    if num < 0:
+        raise ValueError("Input must be a non-negative integer")
+    elif num == 0:
+        return b'\x00'
     else:
-        raise ValueError("Invalid type string. Type must be one of: u1, u2, u4, u8, s1, s2, s4, s8.")
+        # Pack the integer into binary data using struct
+        if endian == 'le':
+            binary_data = struct.pack('<Q', num)  # Q format represents an unsigned long long (8 bytes) in little-endian
+        elif endian == 'be':
+            binary_data = struct.pack('>Q', num)  # >Q format represents an unsigned long long (8 bytes) in big-endian
+        else:
+            raise ValueError("Invalid endianness. Use 'little' or 'big'.")
+        return binary_data
