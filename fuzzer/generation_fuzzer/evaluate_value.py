@@ -155,3 +155,19 @@ def int_to_binary(num, endian='le'):
         else:
             raise ValueError("Invalid endianness. Use 'little' or 'big'.")
         return binary_data
+
+def max_value_for_type(type_str):
+    max_values = {
+        'u1': 0xFF,
+        'u2': 0xFFFF,
+        'u4': 0xFFFFFFFF,
+        'u8': 0xFFFFFFFFFFFFFFFF,
+        's1': 0x7F,
+        's2': 0x7FFF,
+        's4': 0x7FFFFFFF,
+        's8': 0x7FFFFFFFFFFFFFFF,
+    }
+    if type_str in max_values:
+        return max_values[type_str]
+    else:
+        raise ValueError("Invalid type string. Type must be one of: u1, u2, u4, u8, s1, s2, s4, s8.")

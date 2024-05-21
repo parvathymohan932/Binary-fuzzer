@@ -1,4 +1,4 @@
-from random_generate import random_based_on_size, random_based_on_type
+from random_generate import random_based_on_size, random_based_on_type,convert_value_to_type
 from pack_list import pack_list
 from conditionals_preprocessing import preprocess_kaitai_struct, dependency_order
 from evaluate_condition import evaluate_condition
@@ -7,6 +7,7 @@ import string
 from handle_enum import handle_enum
 from evaluate_size import evaluate_size
 from find_user_defined_type import find_user_defined_type
+from evaluate_value import max_value_for_type
 
 def add_value_to_node(item, value):
     item['expansion'] = value
@@ -58,6 +59,55 @@ def handle_field(field, endian, parent, root, parent_string):
     
     return expansion
 
+def handle_valid(valid_value, field_type, endianness, encoding="ASCII"):
+    if isinstance(valid_value, dict):
+        if 'min' in valid_value and 'max' in valid_value:
+            min_value = valid_value['min']
+            max_value = valid_value['max']
+            exp = random.randint(min_value, max_value)
+            return convert_value_to_type(exp, field_type, endianness, encoding)
+        elif 'min' in valid_value:
+            min_value = valid_value['min']
+            max_type = max_value_for_type(field_type)
+            exp = random.randint(min_value, max_type)  
+            return convert_value_to_type(exp, field_type, endianness, encoding)
+        elif 'max' in valid_value:
+            max_value = valid_value['max']
+            exp = random.randint(0, max_value)
+            return convert_value_to_type(exp, field_type, endianness, encoding)
+        elif 'eq' in valid_value:
+            eq_value = valid_value['eq']
+            return convert_value_to_type(eq_value, field_type, endianness, encoding)
+        elif 'any-of' in valid_value:
+            possible_values = valid_value['any-of']
+            if field_type == 'str':
+                possible_values = valid_value['any-of']
+                for i in range(len(possible_values)):
+                    if isinstance(possible_values[i], str) and possible_values[i].startswith('"') and possible_values[i].endswith('"'):
+                        possible_values[i] = possible_values[i][1:-1]
+                selected_value = random.choice(possible_values)
+                return convert_value_to_type(selected_value, field_type, endianness, encoding)
+            selected_value = random.choice(possible_values)
+            print(possible_values)
+            return convert_value_to_type(selected_value, field_type, endianness, encoding)
+        elif 'expr' in valid_value:
+            expr = valid_value['expr']
+            if isinstance(expr, str):
+                max_type=max_value_for_type(field_type)
+                max_attempts = 1000
+                for _ in range(max_attempts):
+                    try:
+                        random_value = random.randint(0,max_type)
+                        if eval(expr, {'_': random_value}):
+                            return convert_value_to_type(random_value, field_type, endianness, encoding)
+                    except Exception as e:
+                        pass  # Ignore exceptions and retry
+                raise ValueError("Unable to find a valid value satisfying the expression within the given range.")
+            elif isinstance(expr, dict):
+                # Handle dictionary expressions if needed
+                pass
+    elif valid_value is not None:
+        return convert_value_to_type(valid_value, field_type, endianness, encoding)
 
 def generate_random_string(size, encoding):
     # Generate random string of given size
