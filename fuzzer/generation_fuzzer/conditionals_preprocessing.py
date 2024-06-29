@@ -3,7 +3,7 @@ import ast
 
 def preprocess_kaitai_struct(struct_definition):
     dependency_graph = {}
-    all_fields = set()  # Using a set here to avoid redundant fields
+    all_fields = []  # Using a set here to avoid redundant fields
     
     # Step 1: Construct the dependency graph
     for field in struct_definition:
@@ -39,7 +39,8 @@ def preprocess_kaitai_struct(struct_definition):
         #     dependency_graph[field['id']].add(dependencies)
         else:
             # If the field does not have 'if' condition, add it to all_fields set
-            all_fields.add(field['id'])
+
+            all_fields.append(field['id'])
 
     # Add all fields to the dependency graph, even those without dependencies
     for field_id in all_fields:

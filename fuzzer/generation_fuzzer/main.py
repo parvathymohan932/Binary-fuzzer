@@ -48,7 +48,7 @@ def write_leaf_values_to_file(data_tree, output_directory):
 output_directory = 'testcases'
 os.makedirs(output_directory, exist_ok=True)
 # Specify the path to your YAML file
-file_path = '/Users/darshanadask/mini_project/Working_area/week12/fuzzer0105/example.ksy'
+file_path = "C:\\Users\\libna\\OneDrive\\Desktop\\mini_project\\switch_2606\\generation_fuzzer\\animal_record.ksy"
 
 # Read the YAML data from the file
 with open(file_path, 'r') as file:  
@@ -69,7 +69,7 @@ print("data_tree is:", data_tree)
 #expansion = handle_seq(data_tree['seq'], endianness, data_tree)
 handle_seq(data_tree['seq'], endianness, data_tree, data_tree, 'data_tree')
 print(data_tree)
-handle_instances(data_tree['instances'], endianness, data_tree, data_tree, None)
+#handle_instances(data_tree['instances'], endianness, data_tree, data_tree, None)
 print(data_tree)
 # Determine the file path
 #filename = f"{id}.{file_extension}" if file_extension else f"{id}"

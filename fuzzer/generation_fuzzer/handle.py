@@ -8,7 +8,9 @@ from handle_enum import handle_enum
 from evaluate_size import evaluate_size
 from find_user_defined_type import find_user_defined_type
 from evaluate_value import max_value_for_type
-
+#from handle_switch import handle_switch
+from find_dict import find_dict
+from evaluate_value import pack_value
 def add_value_to_node(item, value):
     item['expansion'] = value
 
@@ -21,6 +23,7 @@ def append_value_to_node(item, value):
 
 
 def handle_field(field, endian, parent, root, parent_string):
+    print("The parent string is ",parent['seq'])
     endianness= '<' if endian == 'le' else '>'
     content = field.get('contents')
     field_type = field.get('type')
@@ -32,28 +35,8 @@ def handle_field(field, endian, parent, root, parent_string):
     elif field_type:
         if enum_name:
             expansion=handle_enum(root['enums'], enum_name, field_type, '<' if endian == 'le' else '>')
-        elif field_type in ['u1','u2', 'u4', 'u8', 's2', 's4', 's8', 'f2', 'f4', 'f8']:
-            expansion = random_based_on_type(size, field_type, '<' if endian == 'le' else '>', encoding)
-        elif field_type == 'str':
-                 if  (field.get('size-eos', False)==True):
-                     size=random.randint(1,1024)
-                     expansion = random_based_on_type(size, field_type, '<' if endian == 'le' else '>', encoding)
-                 else:
-                     expansion = random_based_on_type(size, field_type, '<' if endian == 'le' else '>', encoding)
-        elif field_type == 'strz':
-            if 'size' in field:
-                size = field['size']  
-            else:
-                size = random.randint(1, 1023)  
-
-            if size < 1:
-                size = 1
-            random_string = generate_random_string(size, encoding)
-            expansion = random_string.encode(encoding) + b'\0'
-
-            
         else:
-            expansion = handle_type(parent, endian, field_type,root, parent_string)
+            expansion=handle_type(field,field_type,parent,endian,root,parent_string)
     else:
         expansion = random_based_on_size(size, endian)
     
@@ -202,8 +185,44 @@ def handle_seq(seq, endian, parent,root, parent_string):
     total_expansion= calculate_total_expansion_in_current_seq(parent)
     return total_expansion
 
+def handle_type(field,field_type,parent,endian, root, parent_string):
+    endianness= '<' if endian == 'le' else '>'
+    
+    #field_type = field.get('type')
+    size = evaluate_size(field.get('size', 0), endianness, parent )
+    encoding = field.get('encoding')
+    
+    
+    if field_type in ['u1','u2', 'u4', 'u8', 's2', 's4', 's8', 'f2', 'f4', 'f8']:
+        expansion = random_based_on_type(size, field_type, '<' if endian == 'le' else '>', encoding)
+    elif field_type == 'str':
+                if  (field.get('size-eos', False)==True):
+                    size=random.randint(1,1024)
+                    expansion = random_based_on_type(size, field_type, '<' if endian == 'le' else '>', encoding)
+                else:
+                    expansion = random_based_on_type(size, field_type, '<' if endian == 'le' else '>', encoding)
+    elif  isinstance(field_type,dict) and 'switch-on'in field_type:
+        switch_id=field_type['switch-on']
+        cases=field_type['cases']
+        expansion=handle_switch(field,root, parent,endian,parent_string,switch_id,cases)
+        
+    elif field_type == 'strz':
+        if 'size' in field:
+            size = field['size']  
+        else:
+            size = random.randint(1, 1023)  
 
-def handle_type(parent, endian, user_defined_type,data_tree, parent_string):
+        if size < 1:
+            size = 1
+        random_string = generate_random_string(size, encoding)
+        expansion = random_string.encode(encoding) + b'\0'
+
+        
+    else:
+        expansion = handle_user_defined_type(parent, endian, field_type,root, parent_string)
+    return expansion
+
+def handle_user_defined_type(parent, endian, user_defined_type,data_tree, parent_string):
     #if parent is None:
     #    raise ValueError(" parent cannot be None.")
     
@@ -259,3 +278,21 @@ def calculate_total_expansion_in_current_seq(parent):
         if field_value is not None:
             total_expansion_in_current_seq+=field_value
     return total_expansion_in_current_seq
+
+
+def change_switch_id(data_tree,parent_string,switch_val,switch_id, endian):
+    curr_dict= find_dict(parent_string, data_tree)
+    endianness= '<' if endian == 'le' else '>'
+    for item in curr_dict['seq']:
+        if (item.get('id')==switch_id):
+            print(f"Switching ID: {switch_id}, Value: {switch_val}, Type: {item['type']}") 
+            item['expansion']=convert_value_to_type(switch_val,item['type'],endianness, encoding=None)
+            break
+            
+             
+def handle_switch(field,data_tree,parent,endian, parent_string,switch_id,case_dict):
+        case_key = random.choice(list(case_dict.keys()))
+        case_value = case_dict[case_key]
+        change_switch_id(data_tree,parent_string,case_key,switch_id, endian)
+        expansion=handle_type(field,case_value,parent,endian,data_tree,parent_string)
+        return expansion

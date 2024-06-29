@@ -48,8 +48,11 @@ def random_based_on_type(size, type_field, endianness, encoding=None):
     
 
 def convert_value_to_type(value, type_field, endianness, encoding=None):
+    print(f"Converting value: {value}, type_field: {type_field}, endianness: {endianness}")
     if type_field == 'u1':
-        return struct.pack(f'{endianness}B', value)
+        val= struct.pack(f'{endianness}B', value)
+        print("Val is ", val)
+        return val
     elif type_field == 'b1':
         return struct.pack(f'{endianness}B', value & 0b1)
     elif type_field == 'b4':
