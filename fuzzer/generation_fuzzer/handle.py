@@ -11,6 +11,7 @@ from evaluate_value import max_value_for_type
 #from handle_switch import handle_switch
 from find_dict import find_dict
 from evaluate_value import pack_value
+from handle_valid import handle_valid
 def add_value_to_node(item, value):
     item['expansion'] = value
 
@@ -18,9 +19,6 @@ def append_value_to_node(item, value):
     if 'expansion' not in item:
         item['expansion'] = b''
     item['expansion'] += value
-
-
-
 
 def handle_field(field, endian, parent, root, parent_string):
     print("The parent string is ",parent['seq'])
@@ -30,8 +28,11 @@ def handle_field(field, endian, parent, root, parent_string):
     size = evaluate_size(field.get('size', 0), endianness, parent )
     encoding = field.get('encoding')
     enum_name=field.get('enum')
+    valid_value=field.get('valid')
     if content is not None:
         expansion = pack_list(content, '<' if endian == 'le' else '>')
+    elif valid_value is not None:
+         expansion = handle_valid(valid_value, field_type,parent,root,endianness,encoding)
     elif field_type:
         if enum_name:
             expansion=handle_enum(root['enums'], enum_name, field_type, '<' if endian == 'le' else '>')
@@ -41,56 +42,6 @@ def handle_field(field, endian, parent, root, parent_string):
         expansion = random_based_on_size(size, endian)
     
     return expansion
-
-def handle_valid(valid_value, field_type, endianness, encoding="ASCII"):
-    if isinstance(valid_value, dict):
-        if 'min' in valid_value and 'max' in valid_value:
-            min_value = valid_value['min']
-            max_value = valid_value['max']
-            exp = random.randint(min_value, max_value)
-            return convert_value_to_type(exp, field_type, endianness, encoding)
-        elif 'min' in valid_value:
-            min_value = valid_value['min']
-            max_type = max_value_for_type(field_type)
-            exp = random.randint(min_value, max_type)  
-            return convert_value_to_type(exp, field_type, endianness, encoding)
-        elif 'max' in valid_value:
-            max_value = valid_value['max']
-            exp = random.randint(0, max_value)
-            return convert_value_to_type(exp, field_type, endianness, encoding)
-        elif 'eq' in valid_value:
-            eq_value = valid_value['eq']
-            return convert_value_to_type(eq_value, field_type, endianness, encoding)
-        elif 'any-of' in valid_value:
-            possible_values = valid_value['any-of']
-            if field_type == 'str':
-                possible_values = valid_value['any-of']
-                for i in range(len(possible_values)):
-                    if isinstance(possible_values[i], str) and possible_values[i].startswith('"') and possible_values[i].endswith('"'):
-                        possible_values[i] = possible_values[i][1:-1]
-                selected_value = random.choice(possible_values)
-                return convert_value_to_type(selected_value, field_type, endianness, encoding)
-            selected_value = random.choice(possible_values)
-            print(possible_values)
-            return convert_value_to_type(selected_value, field_type, endianness, encoding)
-        elif 'expr' in valid_value:
-            expr = valid_value['expr']
-            if isinstance(expr, str):
-                max_type=max_value_for_type(field_type)
-                max_attempts = 1000
-                for _ in range(max_attempts):
-                    try:
-                        random_value = random.randint(0,max_type)
-                        if eval(expr, {'_': random_value}):
-                            return convert_value_to_type(random_value, field_type, endianness, encoding)
-                    except Exception as e:
-                        pass  # Ignore exceptions and retry
-                raise ValueError("Unable to find a valid value satisfying the expression within the given range.")
-            elif isinstance(expr, dict):
-                # Handle dictionary expressions if needed
-                pass
-    elif valid_value is not None:
-        return convert_value_to_type(valid_value, field_type, endianness, encoding)
 
 def generate_random_string(size, encoding):
     # Generate random string of given size
