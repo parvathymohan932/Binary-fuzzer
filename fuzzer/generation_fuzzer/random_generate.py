@@ -47,7 +47,7 @@ def random_based_on_type(size, type_field, endianness, encoding=None):
         return b''
     
 
-def convert_value_to_type(value, type_field, endianness, encoding=None):
+def convert_value_to_type(value, type_field, endianness, encoding=None, size=None):
     print(f"Converting value: {value}, type_field: {type_field}, endianness: {endianness}")
     if type_field == 'u1':
         val= struct.pack(f'{endianness}B', value)
@@ -78,12 +78,21 @@ def convert_value_to_type(value, type_field, endianness, encoding=None):
     elif type_field == 'f8':
         return struct.pack(f'{endianness}d', value)
     elif type_field == 'str':
-        if encoding == 'UTF-8':
-            return str(value).encode('utf-8')
-        elif encoding == 'ASCII':
-            return str(value).encode('ascii')
+        value = str(value)
+        if value.startswith('"') and value.endswith('"'):
+            value = value[1:-1]
+        elif value.startswith("'") and value.endswith("'"):
+            value = value[1:-1]
+        if encoding is None:
+            encoding = 'ascii'  # Default encoding if none specified
+        encoded_value = str(value).encode(encoding)
+        if size:
+            if len(encoded_value) > size:
+                return encoded_value[:size]  # Truncate if too long
+            else:
+                return encoded_value.ljust(size, b'\x00')  # Pad with null bytes if too short
         else:
-            return str(value).encode('ascii') 
+            return encoded_value
     else:
         return b''
 

@@ -1,21 +1,50 @@
 from random_generate import convert_value_to_type
 from evaluate_value import binary_to_int,max_value_for_type
-from handle_dot_operator import handle_dot_operator
 import random
 import re
-from handle_dot_operator import handle_dot_operator
-import re
+
+def dot_operator(expression, parent, endian, root):
+    tokens = expression.split('.')
+    print(f"Handling dot operator for expression '{expression}', tokens: {tokens}")
+    
+    current_value = root if tokens[0] == '_root' else parent
+    for token in tokens[1:]:
+        if isinstance(current_value, dict):
+            if 'seq' in current_value:
+                found = False
+                for item in current_value['seq']:
+                    if item.get('id') == token:
+                        expansion = item.get('expansion')
+                        print("Dot operator",expansion)
+                        if expansion is not None:
+                            current_value = binary_to_int(expansion, endian)
+                        else:
+                            current_value = None
+                        found = True
+                        break
+                if not found:
+                    current_value = current_value.get(token, None)
+            else:
+                current_value = current_value.get(token, None)
+        else:
+            current_value = None
+        print(f"Current value after handling token '{token}': {current_value}")
+    
+    if current_value is None:
+        raise ValueError(f"Unable to resolve expression '{expression}'")
+    
+    return current_value
 
 def evaluate_condition(condition_string, parent, endian, root):
     tokens = re.findall(r'\b\w+(?:\.\w+)*\b|[!=<>+*/%-]+', condition_string)
     print("Tokens:", tokens)
-    print("Original condition string:", condition_string)
+    print("Original condition string HEREEE:", condition_string)
     
     # Process each token in the condition string
     for i, token in enumerate(tokens):
         if '.' in token:
             # If the token contains a dot, handle dot operator
-            value = handle_dot_operator(token, parent, endian, root)
+            value = dot_operator(token, parent, endian, root)
             print(f"Handling dot operator for token '{token}', got value: {value}")
             tokens[i] = value  # Replace token with its numeric value
         else:
@@ -46,6 +75,7 @@ def evaluate_condition(condition_string, parent, endian, root):
 
 
 def handle_valid(valid_value, field_type, parent, root, endianness, encoding="ASCII"):
+    
     if isinstance(valid_value, dict):
         if 'min' in valid_value and 'max' in valid_value:
             min_value = valid_value['min']
@@ -96,7 +126,9 @@ def handle_valid(valid_value, field_type, parent, root, endianness, encoding="AS
             return convert_value_to_type(selected_value, field_type, endianness, encoding)
         elif 'expr' in valid_value:
             expr = valid_value['expr']
+            
             if isinstance(expr, str) and '.' in expr:
+                
                 expr = evaluate_condition(expr, parent, endianness, root)
                 return convert_value_to_type(expr, field_type, endianness, encoding)
             elif isinstance(expr, str):
@@ -116,11 +148,3 @@ def handle_valid(valid_value, field_type, parent, root, endianness, encoding="AS
     elif valid_value is not None:
         return convert_value_to_type(valid_value, field_type, endianness, encoding)
     
-def binary_to_decimal(binary_value, endianness='big'):
-    try:
-        # Convert binary bytes to integer
-        decimal_value = int.from_bytes(binary_value, byteorder=endianness, signed=False)
-        return decimal_value
-    except Exception as e:
-        print(f"Error converting binary to decimal: {e}")
-        return None

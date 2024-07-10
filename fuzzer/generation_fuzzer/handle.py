@@ -12,6 +12,7 @@ from evaluate_value import max_value_for_type
 from find_dict import find_dict
 from evaluate_value import pack_value
 from handle_valid import handle_valid
+import re
 def add_value_to_node(item, value):
     item['expansion'] = value
 
@@ -20,12 +21,15 @@ def append_value_to_node(item, value):
         item['expansion'] = b''
     item['expansion'] += value
 
+
+
+
 def handle_field(field, endian, parent, root, parent_string):
-    print("The parent string is ",parent['seq'])
+    #print("The parent string is ",parent['seq'])
     endianness= '<' if endian == 'le' else '>'
     content = field.get('contents')
     field_type = field.get('type')
-    size = evaluate_size(field.get('size', 0), endianness, parent )
+    size = evaluate_size(field.get('size', 0), endianness, parent, field)
     encoding = field.get('encoding')
     enum_name=field.get('enum')
     valid_value=field.get('valid')
@@ -42,6 +46,56 @@ def handle_field(field, endian, parent, root, parent_string):
         expansion = random_based_on_size(size, endian)
     
     return expansion
+
+# def handle_valid(valid_value, field_type, endianness, encoding="ASCII"):
+#     if isinstance(valid_value, dict):
+#         if 'min' in valid_value and 'max' in valid_value:
+#             min_value = valid_value['min']
+#             max_value = valid_value['max']
+#             exp = random.randint(min_value, max_value)
+#             return convert_value_to_type(exp, field_type, endianness, encoding)
+#         elif 'min' in valid_value:
+#             min_value = valid_value['min']
+#             max_type = max_value_for_type(field_type)
+#             exp = random.randint(min_value, max_type)  
+#             return convert_value_to_type(exp, field_type, endianness, encoding)
+#         elif 'max' in valid_value:
+#             max_value = valid_value['max']
+#             exp = random.randint(0, max_value)
+#             return convert_value_to_type(exp, field_type, endianness, encoding)
+#         elif 'eq' in valid_value:
+#             eq_value = valid_value['eq']
+#             return convert_value_to_type(eq_value, field_type, endianness, encoding)
+#         elif 'any-of' in valid_value:
+#             possible_values = valid_value['any-of']
+#             if field_type == 'str':
+#                 possible_values = valid_value['any-of']
+#                 for i in range(len(possible_values)):
+#                     if isinstance(possible_values[i], str) and possible_values[i].startswith('"') and possible_values[i].endswith('"'):
+#                         possible_values[i] = possible_values[i][1:-1]
+#                 selected_value = random.choice(possible_values)
+#                 return convert_value_to_type(selected_value, field_type, endianness, encoding)
+#             selected_value = random.choice(possible_values)
+#             print(possible_values)
+#             return convert_value_to_type(selected_value, field_type, endianness, encoding)
+#         elif 'expr' in valid_value:
+#             expr = valid_value['expr']
+#             if isinstance(expr, str):
+#                 max_type=max_value_for_type(field_type)
+#                 max_attempts = 1000
+#                 for _ in range(max_attempts):
+#                     try:
+#                         random_value = random.randint(0,max_type)
+#                         if eval(expr, {'_': random_value}):
+#                             return convert_value_to_type(random_value, field_type, endianness, encoding)
+#                     except Exception as e:
+#                         pass  # Ignore exceptions and retry
+#                 raise ValueError("Unable to find a valid value satisfying the expression within the given range.")
+#             elif isinstance(expr, dict):
+#                 # Handle dictionary expressions if needed
+#                 pass
+#     elif valid_value is not None:
+#         return convert_value_to_type(valid_value, field_type, endianness, encoding)
 
 def generate_random_string(size, encoding):
     # Generate random string of given size
@@ -72,31 +126,42 @@ def handle_repeat_expr_field(field, endian, seq, parent,root, parent_string):
     total_expansion += expansion
     append_value_to_node(field, expansion)
     if repeat_expr is not None:
-        result= evaluate_condition(repeat_expr, seq, endian)
+        result= evaluate_condition(repeat_expr, seq, endian, field)
     for _ in range(1,result):
         expansion = handle_field(field, endian, parent, root,parent_string)
         total_expansion += expansion
         append_value_to_node(field, expansion)
     
     return total_expansion
-'''
-def handle_repeat_until_field(field, endian, seq, parent):
+
+def handle_repeat_until_field(field, endian, seq, parent, root, parent_string):
+    endianness= '<' if endian == 'le' else '>'
+    size = evaluate_size(field.get('size', 0), endianness, parent, field)
+    encoding = field.get('encoding')
     total_expansion=b''
     repeat_expr = field.get('repeat-until')
-    expansion = handle_field(field, endian, parent)
-    total_expansion += expansion
-    append_value_to_node(field, expansion)
-    if repeat_expr is not None:
-        result= evaluate_condition(repeat_expr,field, seq, endian)
-        print("Result new: ", result)
-    for _ in range(1, result):
-        expansion = handle_field(field, endian, parent)
+    max=100
+
+    while(max>0):
+        expansion = handle_field(field, endian, parent,root, parent_string)
+        result= evaluate_condition(repeat_expr,parent, endian, field)
         total_expansion += expansion
         append_value_to_node(field, expansion)
-    
+        if(result==True):
+            break
+        max=max-1
+    if result==False:
+        match = re.search(r'==\s*(\d+)', repeat_expr)
+        if match:
+            val = match.group(1)
+            print("The val in handle_repeat_until is ", val)
+            rhs_val= convert_value_to_type(val,endianness,encoding, size)
+            print("The rhs_val in handle_repeat_until is ", rhs_val)
+            total_expansion+=rhs_val
+            append_value_to_node(field, rhs_val)
     return total_expansion
 
-'''
+
 
 
 def handle_seq(seq, endian, parent,root, parent_string):
@@ -104,7 +169,7 @@ def handle_seq(seq, endian, parent,root, parent_string):
     dependency_graph = preprocess_kaitai_struct(seq)
     ordered_list = dependency_order(dependency_graph)
     
-    print("Parent string in handle_seq", parent_string)
+   # print("Parent string in handle_seq", parent_string)
     for field_id in ordered_list:
         print("Reached in handle_seq")
         field = next((item for item in seq if item['id'] == field_id), None)
@@ -114,7 +179,7 @@ def handle_seq(seq, endian, parent,root, parent_string):
         condition_string= field.get('if')
         if condition_string is not None:
             #print("Seq is: ", seq)
-            result = evaluate_condition(condition_string,parent,endian)
+            result = evaluate_condition(condition_string,parent,endian, field)
             #print("Result is: ",result)
             if(result==False):
                 continue
@@ -127,8 +192,8 @@ def handle_seq(seq, endian, parent,root, parent_string):
                 expansion = handle_repeat_field(field, endian, parent, root,parent_string)
             elif field.get('repeat') == 'expr':
                 expansion= handle_repeat_expr_field(field, endian, seq, parent, root, parent_string)
-            #elif field.get('repeat') == 'until':
-             #   expansion= handle_repeat_until_field(field, endian, seq, parent)
+            elif field.get('repeat') == 'until':
+                expansion= handle_repeat_until_field(field, endian, seq, parent, root, parent_string)
         
         #total_expansion += expansion
         
@@ -140,7 +205,7 @@ def handle_type(field,field_type,parent,endian, root, parent_string):
     endianness= '<' if endian == 'le' else '>'
     
     #field_type = field.get('type')
-    size = evaluate_size(field.get('size', 0), endianness, parent )
+    size = evaluate_size(field.get('size', 0), endianness, parent, field )
     encoding = field.get('encoding')
     
     
@@ -189,8 +254,8 @@ def handle_user_defined_type(parent, endian, user_defined_type,data_tree, parent
     types_dict, new_parent_string = find_user_defined_type(user_defined_type, parent_string, data_tree)
     #new_parent_string += "['types']"
     #new_parent_string += f"['{user_defined_type}']"
-    print("New_parent_string in handle_type:", new_parent_string)
-    print("Type dict in handle_type",types_dict)
+    #print("New_parent_string in handle_type:", new_parent_string)
+    #print("Type dict in handle_type",types_dict)
 
     #for types_dict in types_to_search:
     #print("User-defined type is ", user_defined_type,"Type dict: ",  types_dict)
@@ -201,13 +266,14 @@ def handle_user_defined_type(parent, endian, user_defined_type,data_tree, parent
     #print("PARENT: ",parent)
     #expansion = handle_seq(type_entry['seq'], endian, type_entry, parent)
     #add_value_to_node(type_entry, expansion)
-    if type_entry.get('expansion') is None:
-            print("HEREEEE:  ", type_entry)
-            #parent_string= parent_string.append
-            expansion=handle_seq(type_entry['seq'], endian, type_entry,data_tree, new_parent_string)
-            add_value_to_node(type_entry,expansion )
-    else:
-        expansion= type_entry.get('expansion')
+    # from here
+    #if type_entry.get('expansion') is None:
+    print("HEREEEE:  ", type_entry)
+    expansion=handle_seq(type_entry['seq'], endian, type_entry,data_tree, new_parent_string)
+    add_value_to_node(type_entry,expansion )
+    #else:
+    #    expansion= type_entry.get('expansion')
+    #till here
     #break
     return expansion
 
@@ -237,12 +303,16 @@ def change_switch_id(data_tree,parent_string,switch_val,switch_id, endian):
     for item in curr_dict['seq']:
         if (item.get('id')==switch_id):
             print(f"Switching ID: {switch_id}, Value: {switch_val}, Type: {item['type']}") 
-            item['expansion']=convert_value_to_type(switch_val,item['type'],endianness, encoding=None)
+            if(item.get('encoding') is not None and item.get('size') is not None):
+                item['expansion']=convert_value_to_type(switch_val,item['type'],endianness, item['encoding'], item['size'])
+            else:
+                item['expansion']=convert_value_to_type(switch_val,item['type'],endianness, None , None)
             break
             
              
 def handle_switch(field,data_tree,parent,endian, parent_string,switch_id,case_dict):
         case_key = random.choice(list(case_dict.keys()))
+        #clean_case_key = re.sub(r'^"|"$', '', str(case_key))
         case_value = case_dict[case_key]
         change_switch_id(data_tree,parent_string,case_key,switch_id, endian)
         expansion=handle_type(field,case_value,parent,endian,data_tree,parent_string)
