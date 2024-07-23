@@ -33,20 +33,24 @@ def find_parent(name_attribute, parent):
             return seq_item.get('type')
     return None
 
-def handle_dot_operator(value_string, parent, endianness):
+def handle_dot_operator(value_string, parent, field, endianness):
   print("Value:string:", value_string)
   tokens = split_tokens_by_dot(value_string)
   nested_dict = split_tokens_to_get_a_dictionary(tokens)
   print("Nested dict:", nested_dict)
-  evaluated_value = evaluate_value_dot_operator(nested_dict, parent, endianness)
+  evaluated_value = evaluate_value_dot_operator(nested_dict, parent, endianness, field)
   return evaluated_value  
-def evaluate_value_dot_operator(nested_dict, parent, endianness):
+def evaluate_value_dot_operator(nested_dict, parent, endianness, field):
     for key, value in nested_dict.items():
         if value != {}:
+            if key=='_':
+                print("Field in evaluate_dot_operator is ", field)
+                key= field.get('id')
             parent_type = find_parent(key, parent)
+            print("Parent is ", parent_type, "for key ", key)
             print("Parent['types']= ", parent['types'])
             if parent_type is not None:
-                return evaluate_value_dot_operator(value, parent['types'][parent_type], endianness)
+                return evaluate_value_dot_operator(value, parent['types'][parent_type], endianness, field)
             else:
                 raise ValueError(f"Parent type for '{key}' not found.")
         else:
@@ -57,12 +61,19 @@ def evaluate_value_dot_operator(nested_dict, parent, endianness):
                     data_type = item.get('type')
                     encoding = item.get('encoding')
                     print(evaluated_value)
-                    if evaluated_value is None:
-                        raise ValueError(f"No value found for key '{key}' in the 'seq' list.")
+                    #if evaluated_value is None:
+                    #    raise ValueError(f"No value found for key '{key}' in the 'seq' list.")
                     
                     if data_type is None:
                         # Handle when data type is None
                         return binary_to_int(evaluated_value, endianness)
+                    elif data_type == 'str':
+                        # Handle when data type is string
+                        try:
+                            return evaluated_value.decode(encoding)
+                        except Exception as e:
+                            print(f"Error occurred while decoding binary to string: {e}")
+                            return ""
                     else:
                         return binary_to_int(evaluated_value, endianness)
             else:
