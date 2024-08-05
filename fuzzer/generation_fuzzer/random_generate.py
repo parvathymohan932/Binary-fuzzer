@@ -1,5 +1,6 @@
 import struct
 import random
+import re
 def random_based_on_size(size, endianness):
     byteorder = 'little' if endianness == 'le' else 'big'
     random_number = random.randint(0, 2**(size * 8) - 1)
@@ -15,17 +16,33 @@ def random_based_on_type(size, type_field, endianness, encoding=None):
         return struct.pack(f'{endianness}I', random.randint(0, 4294967295))
     elif type_field == 'u8':
         return struct.pack(f'{endianness}Q', random.randint(0, 18446744073709551615))
-    elif type_field=='b1':
-        return struct.pack(f'{endianness}B', random.randint(0, 1))
-    elif type_field=='b4':
-        value = random.randint(0, 15)
-        return struct.pack(f'{endianness}B', value & 0b1111)
-    elif type_field == 'b2':
-        value = random.randint(0, 3)
-        return struct.pack(f'{endianness}B', value & 0b11)
-    elif type_field=='b5':
-        value = random.randint(0, 31)
-        return struct.pack(f'{endianness}B', value & 0b11111)
+    # elif type_field=='b1':
+    #     return struct.pack(f'{endianness}B', random.randint(0, 1))
+    # elif type_field=='b4':
+    #     value = random.randint(0, 15)
+    #     return struct.pack(f'{endianness}B', value & 0b1111)
+    # elif type_field == 'b2':
+    #     value = random.randint(0, 3)
+    #     return struct.pack(f'{endianness}B', value & 0b11)
+    # elif type_field=='b5':
+    #     value = random.randint(0, 31)
+    #     return struct.pack(f'{endianness}B', value & 0b11111)
+    elif re.match(r'b\d+', type_field):
+        num_bits = int(type_field[1:])
+        if num_bits <= 8:
+            value = random.randint(0, (1 << num_bits) - 1)
+            return struct.pack(f'{endianness}B', value)
+        elif num_bits <= 16:
+            value = random.randint(0, (1 << num_bits) - 1)
+            return struct.pack(f'{endianness}H', value)
+        elif num_bits <= 32:
+            value = random.randint(0, (1 << num_bits) - 1)
+            return struct.pack(f'{endianness}I', value)
+        elif num_bits <= 64:
+            value = random.randint(0, (1 << num_bits) - 1)
+            return struct.pack(f'{endianness}Q', value)
+        else:
+            raise ValueError(f"Unsupported bit length: {num_bits}")
     elif type_field == 's2':
         return struct.pack(f'{endianness}h', random.randint(-32768, 32767))
     elif type_field == 's4':

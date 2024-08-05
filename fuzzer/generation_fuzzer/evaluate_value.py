@@ -86,7 +86,6 @@ def binary_to_int(value, endianness):
         print(f"Error occurred while converting binary to integer: {e}")
         return 0
 
-
 # def binary_to_int(value, endianness):
     
 #     try:

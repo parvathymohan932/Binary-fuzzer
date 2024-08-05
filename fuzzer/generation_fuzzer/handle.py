@@ -209,7 +209,7 @@ def handle_type(field,field_type,parent,endian, root, parent_string):
     encoding = field.get('encoding')
     
     
-    if field_type in ['u1','u2', 'u4', 'u8', 's2', 's4', 's8', 'f2', 'f4', 'f8']:
+    if field_type in ['u1','u2', 'u4', 'u8', 's2', 's4', 's8', 'f2', 'f4', 'f8'] or re.match(r'b\d+', field_type):
         expansion = random_based_on_type(size, field_type, '<' if endian == 'le' else '>', encoding)
     elif field_type == 'str':
                 if  (field.get('size-eos', False)==True):
