@@ -34,9 +34,8 @@ This project applies structure-aware fuzzing to a vBNG using Kaitai Struct, a de
      cd harvested_test_cases
 
 ## Running the Generation Fuzzer
-If you only want to try the generation fuzzer, follow these steps: 
-
-1. Navigate to the generation fuzzer directory and run main.py:
+If you only want to try the generation fuzzer, follow these steps:
+1. Navigate to the fuzzer directory and run main.py:
      cd fuzzer
      cd generation_fuzzer
      python3 main.py
@@ -44,6 +43,4 @@ If you only want to try the generation fuzzer, follow these steps:
 ## License
 This project is licensed under the MIT License. See the LICENSE file for details.
 
-
-
-
+This is the entire read me file. Correct this so that i can directly copy and paste this to my repo
