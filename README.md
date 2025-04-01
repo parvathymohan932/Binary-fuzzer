@@ -28,42 +28,44 @@ This project applies structure-aware fuzzing to a vBNG using Kaitai Struct, a de
 
 ### Installation & Execution
 
-> 1. Clone the repository: git clone https://github.com/parvathymohan932/Binary-fuzzer.git
+1. Clone the repository:
+>   git clone https://github.com/parvathymohan932/Binary-fuzzer.git
 
 2. Run the fuzzer bot and process test cases:
-
+```
     cd fuzzer_grammar
 
     python3 fuzzer_bot_9_3.py
-
+```
    This generates interesting test cases in the harvested_for_mutation folder.
 
-4. Mutate the generated test cases:
+3. Mutate the generated test cases:
 
-    python3 mutate_traces.py
+>   python3 mutate_traces.py
 
-6. Process the mutated test cases:
+4. Process the mutated test cases:
 
-    python3 mutated_traces_processing.py
+>    python3 mutated_traces_processing.py
 
    This step sends the mutated test cases while integrating them with the fuzzer bot.
 
-8. The final set of interesting test cases will be stored in:
+5. The final set of interesting test cases will be stored in:
 
-    cd harvested_test_cases
+>    cd harvested_test_cases
 
 ## Running the Generation Fuzzer
 
 If you only want to try the generation fuzzer, follow these steps:
 
 1. Navigate to the fuzzer directory and run main.py:
-
+   
+```
     cd fuzzer
 
     cd generation_fuzzer
 
      python3 main.py
-
+```
 ## License
 
 This project is licensed under the MIT License. See the LICENSE file for details.
