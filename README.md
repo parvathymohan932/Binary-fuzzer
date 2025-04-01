@@ -28,7 +28,7 @@ This project applies structure-aware fuzzing to a vBNG using Kaitai Struct, a de
 
 ### Installation & Execution
 
-1. Clone the repository: git clone https://github.com/parvathymohan932/Binary-fuzzer.git
+> 1. Clone the repository: git clone https://github.com/parvathymohan932/Binary-fuzzer.git
 
 2. Run the fuzzer bot and process test cases:
 
