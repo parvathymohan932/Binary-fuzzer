@@ -29,7 +29,8 @@ This project applies structure-aware fuzzing to a vBNG using Kaitai Struct, a de
 ### Installation & Execution
 
 1. Clone the repository:
-```   git clone https://github.com/parvathymohan932/Binary-fuzzer.git
+```
+    git clone https://github.com/parvathymohan932/Binary-fuzzer.git
 ```
 2. Run the fuzzer bot and process test cases:
 ```
@@ -64,7 +65,7 @@ If you only want to try the generation fuzzer, follow these steps:
 
     cd generation_fuzzer
 
-     python3 main.py
+    python3 main.py
 ```
 ## License
 
