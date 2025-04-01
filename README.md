@@ -7,16 +7,22 @@ This project applies structure-aware fuzzing to a vBNG using Kaitai Struct, a de
 
 ## Features
 • Black-box Structure-Aware Fuzzing: Generates test cases that conform to protocol specifications.
+
 • Kaitai Struct-Based Input Generation: Uses declarative specifications to ensure valid binary inputs.
+
 • Grammar-Based Response Analysis: Identifies interesting test cases based on deviations from expected behavior.
+
 • Mutation Strategies: Swaps equivalent packets in traces while maintaining protocol validity.
+
 • Systematic Packet Sequence Exploration: Enhances security assessment by uncovering weaknesses in protocol implementations.
 
 ## Getting Started
 
 ### Prerequisites
 • Python 3.8+
+
 • Kaitai Struct Compiler
+
 • A testing environment with vBNG access
 
 ### Installation & Execution
